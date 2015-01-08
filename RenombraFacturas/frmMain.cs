@@ -190,5 +190,21 @@ namespace RenombraFacturas
             MessageBox.Show("Archivos Renombrados.");
         }
 
+        private void frmMain_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button1_Click_1(object sender, EventArgs e)
+        {
+            AboutBox1 a = new AboutBox1();
+            a.Show();
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
     }
 }
