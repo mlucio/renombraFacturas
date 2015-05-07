@@ -41,9 +41,36 @@ namespace RenombraFacturas
             }
         }
 
+        public string ReadFileToString(string filePath)
+        {
+            StreamReader streamReader = new StreamReader(filePath);
+            string text = streamReader.ReadToEnd();
+            streamReader.Close();
+            return text;
+        }
+
+        public static string RemoveSpecialCharacters(string str)
+        {
+            //change regular expression as per your need
+            return Regex.Replace(str, @"(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F\uFEFF\uFFFE\uFFFF]", "", RegexOptions.Compiled);
+        }
+
+        public bool WriteFileFromString(string filePath, string fileContent)
+        {
+            StreamWriter streamWriter = new StreamWriter(filePath);
+            streamWriter.Write(fileContent);
+            streamWriter.Flush();
+            streamWriter.Close();
+            streamWriter.Dispose();
+            return true;
+        }
+
         private void ReadFile(string file, int j)
         {
             string rfc="", serie="", folio="", fecha="";
+            serie = ReadFileToString(file);
+            folio = RemoveSpecialCharacters(serie);
+            if (!folio.Equals(serie)) WriteFileFromString(file, serie);
             XmlTextReader XmlTextReader = new XmlTextReader(file);
             dgvDatos.Rows[j].Cells[2].Value = Path.GetFileNameWithoutExtension(file);
             while (XmlTextReader.Read())
@@ -80,24 +107,40 @@ namespace RenombraFacturas
         private void renombrar_Click(object sender, EventArgs e)
         {
             int j = 0;
+            Random rnd = new Random();
+            int serial; 
             string[] PDFfiles = Directory.GetFiles(DirectorioFacturas.Text, "*.pdf");
             List<string> list = new List<string>(PDFfiles);
 
             for (j = 0; j < dgvDatos.Rows.Count - 1; j++)
             {
-                if (File.Exists(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[2].Value.ToString() + ".xml") &&
-                     !File.Exists(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value + ".xml"))
+                if (File.Exists(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[2].Value.ToString() + ".xml")) 
                 {
-                    System.IO.File.Move(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[2].Value.ToString() + ".xml", DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value.ToString() + ".xml");
-                    File.SetCreationTime(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value + ".xml", DateTime.ParseExact(dgvDatos.Rows[j].Cells[4].Value.ToString(), "yyyy-MM-ddTHH:mm:ss",
-                                           System.Globalization.CultureInfo.InvariantCulture));
-                    File.SetLastWriteTime(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value + ".xml", DateTime.ParseExact(dgvDatos.Rows[j].Cells[4].Value.ToString(), "yyyy-MM-ddTHH:mm:ss",
-                                           System.Globalization.CultureInfo.InvariantCulture));
+                    if (!File.Exists(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value + ".xml") || (dgvDatos.Rows[j].Cells[3].Equals(dgvDatos.Rows[j].Cells[4].Value)))
+                    {
+                        if (! dgvDatos.Rows[j].Cells[3].Equals(dgvDatos.Rows[j].Cells[4].Value))
+                            System.IO.File.Move(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[2].Value.ToString() + ".xml", DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value.ToString() + ".xml");
+                        File.SetCreationTime(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value + ".xml", DateTime.ParseExact(dgvDatos.Rows[j].Cells[4].Value.ToString(), "yyyy-MM-ddTHH:mm:ss",
+                                               System.Globalization.CultureInfo.InvariantCulture));
+                        File.SetLastWriteTime(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value + ".xml", DateTime.ParseExact(dgvDatos.Rows[j].Cells[4].Value.ToString(), "yyyy-MM-ddTHH:mm:ss",
+                                               System.Globalization.CultureInfo.InvariantCulture));
+                    } else
+                    {
+                        serial = rnd.Next(1052);
+                        while (File.Exists(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value.ToString() + "_" + serial + ".xml")) { serial = rnd.Next(1052); }
+                        System.IO.File.Move(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[2].Value.ToString() + ".xml", DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value.ToString() + "_" + serial + ".xml");
+                        File.SetCreationTime(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value + "_" + serial + ".xml", DateTime.ParseExact(dgvDatos.Rows[j].Cells[4].Value.ToString(), "yyyy-MM-ddTHH:mm:ss",
+                                               System.Globalization.CultureInfo.InvariantCulture));
+                        File.SetLastWriteTime(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value + "_" + serial + ".xml", DateTime.ParseExact(dgvDatos.Rows[j].Cells[4].Value.ToString(), "yyyy-MM-ddTHH:mm:ss",
+                                               System.Globalization.CultureInfo.InvariantCulture));
+                    }
                 }
-                if (File.Exists(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[2].Value.ToString() + ".pdf") &&
-                    !File.Exists(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value + ".pdf"))
+                if (File.Exists(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[2].Value.ToString() + ".pdf"))
                 {
-                    System.IO.File.Move(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[2].Value.ToString() + ".pdf", DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value.ToString() + ".pdf");
+                    if (!File.Exists(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value + ".pdf"))
+                    {
+                        System.IO.File.Move(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[2].Value.ToString() + ".pdf", DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value.ToString() + ".pdf");
+                    }
                     File.SetCreationTime(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value + ".pdf", DateTime.ParseExact(dgvDatos.Rows[j].Cells[4].Value.ToString(), "yyyy-MM-ddTHH:mm:ss",
                                            System.Globalization.CultureInfo.InvariantCulture));
                     File.SetLastWriteTime(DirectorioFacturas.Text + "\\" + dgvDatos.Rows[j].Cells[3].Value + ".pdf", DateTime.ParseExact(dgvDatos.Rows[j].Cells[4].Value.ToString(), "yyyy-MM-ddTHH:mm:ss",
